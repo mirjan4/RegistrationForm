@@ -1,86 +1,16 @@
-# Markaz Pros’ Annual Gathering - Event Registration System
+# React + Vite
 
-A full-stack MERN application for event registration with a modern purple gradient theme and glassmorphism UI.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## 🚀 Features
-- **Modern UI**: Responsive, mobile-friendly design using React and Tailwind CSS.
-- **Registration Form**: Validated fields (Name, Phone, Place) with duplicate prevention.
-- **Admin Dashboard**: Protected route to view, search, and delete registrations.
-- **Export to CSV**: Download participant data easily.
-- **Real-time Count**: Displays total registrations on the landing page.
-- **Toast Notifications**: Smooth feedback for user actions.
+Currently, two official plugins are available:
 
-## 🛠️ Tech Stack
-- **Frontend**: React, Tailwind CSS, Framer Motion, Lucide React, Axios, React Hot Toast.
-- **Backend**: Node.js, Express, Mongoose.
-- **Database**: MongoDB.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## 🏃‍♂️ How to Run
+## React Compiler
 
-### 1. Prerequisites
-- Node.js installed
-- MongoDB installed and running locally (or provide a URI)
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-### 2. Backend Setup
-1. Open a terminal and navigate to the `backend` folder:
-   ```bash
-   cd backend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create/verify `.env` file:
-   ```env
-   PORT=5000
-   MONGODB_URI=mongodb://localhost:27017/markaz_event
-   ```
-4. Start the server:
-   ```bash
-   npm run dev
-   # OR
-   node server.js
-   ```
+## Expanding the ESLint configuration
 
-### 3. Frontend Setup
-1. Open another terminal and navigate to the `frontend` folder:
-   ```bash
-   cd frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-4. Open your browser and go to `http://localhost:5173` (or the port shown in the terminal).
-
-### 🔐 Admin Access
-- **URL**: `http://localhost:5173/admin`
-- **Username**: `admin`
-- **Password**: `admin123`
-
-## 📂 Project Structure
-```
-markaz-event-system/
-├── backend/
-│   ├── models/
-│   │   └── Registration.js
-│   ├── server.js
-│   ├── .env
-│   └── package.json
-└── frontend/
-    ├── src/
-    │   ├── components/
-    │   │   ├── AdminDashboard.jsx
-    │   │   ├── AdminLogin.jsx
-    │   │   ├── ProtectedRoute.jsx
-    │   │   └── RegistrationForm.jsx
-    │   ├── App.jsx
-    │   ├── index.css
-    │   └── main.jsx
-    ├── tailwind.config.js
-    └── package.json
-```
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
