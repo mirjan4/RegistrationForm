@@ -74,6 +74,11 @@ apiRouter.delete('/registrations/:id', async (req, res) => {
   }
 });
 
+// Health Check Route
+app.get('/', (req, res) => {
+  res.send('Markaz Event API is running...');
+});
+
 // Mount the router
 app.use('/api', apiRouter);
 
