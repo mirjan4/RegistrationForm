@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/backend/server.js"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "/"
+    }
+  ]
+}
