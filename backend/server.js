@@ -9,22 +9,26 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/markaz_event')
+mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// API Routes
+// API Routes using a Router
+const apiRouter = express.Router();
 
-// POST /api/register - Register a new user
-app.post('/api/register', async (req, res) => {
+// POST /register - Register a new user
+apiRouter.post('/register', async (req, res) => {
   try {
     const { name, phone, place } = req.body;
 
-    // Check if phone number already exists
     const existingUser = await Registration.findOne({ phone });
     if (existingUser) {
       return res.status(400).json({ message: 'This phone number is already registered.' });
@@ -36,16 +40,12 @@ app.post('/api/register', async (req, res) => {
     res.status(201).json({ message: 'Registration successful!', data: newRegistration });
   } catch (error) {
     console.error('Registration error:', error);
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(val => val.message);
-      return res.status(400).json({ message: messages.join(', ') });
-    }
-    res.status(500).json({ message: 'Server error. Please try again later.' });
+    res.status(500).json({ message: 'Server error.' });
   }
 });
 
-// GET /api/registrations - Get all registrations (for admin)
-app.get('/api/registrations', async (req, res) => {
+// GET /registrations - Get all registrations
+apiRouter.get('/registrations', async (req, res) => {
   try {
     const registrations = await Registration.find().sort({ createdAt: -1 });
     res.status(200).json(registrations);
@@ -54,8 +54,8 @@ app.get('/api/registrations', async (req, res) => {
   }
 });
 
-// GET /api/count - Get total registration count
-app.get('/api/count', async (req, res) => {
+// GET /count - Get total registration count
+apiRouter.get('/count', async (req, res) => {
   try {
     const count = await Registration.countDocuments();
     res.status(200).json({ count });
@@ -64,8 +64,8 @@ app.get('/api/count', async (req, res) => {
   }
 });
 
-// DELETE /api/registrations/:id - Delete a registration (optional/admin)
-app.delete('/api/registrations/:id', async (req, res) => {
+// DELETE /registrations/:id - Delete a registration
+apiRouter.delete('/registrations/:id', async (req, res) => {
   try {
     await Registration.findByIdAndDelete(req.params.id);
     res.status(200).json({ message: 'Registration deleted successfully.' });
@@ -73,6 +73,10 @@ app.delete('/api/registrations/:id', async (req, res) => {
     res.status(500).json({ message: 'Error deleting registration.' });
   }
 });
+
+// Mount the router
+app.use('/api', apiRouter);
+
 
 const PORT = process.env.PORT || 5000;
 

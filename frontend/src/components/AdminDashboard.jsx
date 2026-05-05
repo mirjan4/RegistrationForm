@@ -14,7 +14,10 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+let API_URL = import.meta.env.VITE_API_URL || '/api';
+if (API_URL.endsWith('/')) {
+  API_URL = API_URL.slice(0, -1);
+}
 
 const AdminDashboard = () => {
   const [registrations, setRegistrations] = useState([]);
