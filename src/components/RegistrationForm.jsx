@@ -4,11 +4,6 @@ import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { MapPin, Calendar, Clock, User, Phone, Map, Send, Loader2 } from 'lucide-react';
 
-let API_URL = import.meta.env.VITE_API_URL || '/api';
-if (API_URL.endsWith('/')) {
-  API_URL = API_URL.slice(0, -1);
-}
-
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const RegistrationForm = () => {
