@@ -1,5 +1,5 @@
 // Fresh build trigger - Vercel Root Fix
-import 'dotenv/config';
+// Fresh Build - Native Env
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
