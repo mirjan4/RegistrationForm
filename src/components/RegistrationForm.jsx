@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+// Use relative path to ensure it always works on any Vercel URL
+const API_URL = '/api';
 
 // --- Icons (inline SVGs) ---
 // ... (Keeping all your beautiful icons) ...

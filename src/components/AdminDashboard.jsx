@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+// Use relative path to ensure it always works on any Vercel URL
+const API_URL = '/api';
 
 // --- SVG Icons ---
 const Icon = ({ d, size=20, ...p }) => (
