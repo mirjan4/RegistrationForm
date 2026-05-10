@@ -212,7 +212,8 @@ app.use('/api', apiRouter);
 app.use('/', apiRouter);
 
 // Catch-all for React Router (must be after API routes)
-app.get('/*', (req, res) => {
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
