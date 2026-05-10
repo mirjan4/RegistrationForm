@@ -162,6 +162,15 @@ apiRouter.delete('/admin/members/:id', async (req, res) => {
 });
 
 // --- Health & Status ---
+apiRouter.get('/db-status', (req, res) => {
+  const states = ['Disconnected', 'Connected', 'Connecting', 'Disconnecting'];
+  res.json({ 
+    status: states[mongoose.connection.readyState], 
+    readyState: mongoose.connection.readyState,
+    dbName: mongoose.connection.name
+  });
+});
+
 apiRouter.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Backend is working!', timestamp: new Date() });
 });
