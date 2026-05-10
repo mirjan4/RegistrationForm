@@ -23,15 +23,18 @@ app.use(express.json());
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
+let lastConnectError = null;
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('✅ SUCCESS: Connected to MongoDB');
+    lastConnectError = null;
   })
   .catch(err => {
     console.error('❌ ERROR: Could not connect to MongoDB!');
-    console.error('Check if MONGODB_URI is correct in your .env file.');
     console.error('Error Details:', err.message);
+    lastConnectError = err.message;
   });
 
 // API Routes
@@ -168,7 +171,8 @@ apiRouter.get('/db-status', (req, res) => {
     status: states[mongoose.connection.readyState], 
     readyState: mongoose.connection.readyState,
     dbName: mongoose.connection.name,
-    hasUri: !!process.env.MONGODB_URI, // Tells us if the variable exists
+    hasUri: !!process.env.MONGODB_URI,
+    error: lastConnectError, // Show the real error here
     env: process.env.NODE_ENV
   });
 });
