@@ -9,6 +9,12 @@ import { Readable } from 'stream';
 
 import Member from './models/Member.js';
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 
 // Middleware
@@ -19,7 +25,11 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Multer Config for CSV Upload (Memory storage for Vercel compatibility)
+// Serve static files from the React app (built in dist)
+const distPath = path.join(__dirname, '../dist');
+app.use(express.static(distPath));
+
+// Multer Config for CSV Upload
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
@@ -201,6 +211,11 @@ app.get('/', (req, res) => {
 app.use('/api', apiRouter);
 app.use('/', apiRouter);
 
+// Catch-all for React Router (must be after API routes)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
+});
+
 // Global Error Handler for transparency
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -211,14 +226,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Catch-all for debugging
-app.use((req, res) => {
-  res.status(404).send(`Backend reachable! But route not found. Express saw URL: ${req.url}`);
-});
-
 const PORT = process.env.PORT || 5000;
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-}
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 export default app;

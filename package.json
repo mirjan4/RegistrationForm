@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:server": "node api/index.js",
+    "start": "node api/index.js",
     "dev:local": "concurrently \"npm run dev\" \"npm run dev:server\"",
     "build": "vite build",
     "lint": "eslint .",
