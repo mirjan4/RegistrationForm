@@ -26,7 +26,7 @@ app.use(cors({
 app.use(express.json());
 
 // Serve static files from the React app (built in dist)
-const distPath = path.join(__dirname, '../dist');
+const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 
 // Multer Config for CSV Upload
@@ -201,10 +201,6 @@ app.get('/health', (req, res) => {
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Backend is working!', timestamp: new Date() });
-});
-
-app.get('/', (req, res) => {
-  res.send('Markaz Verification API is running...');
 });
 
 // Mount the router
