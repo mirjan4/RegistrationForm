@@ -1,10 +1,10 @@
+import 'dotenv/config';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import multer from 'multer';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
-import 'dotenv/config';
 
 import Member from './models/Member.js';
 
