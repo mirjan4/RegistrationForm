@@ -167,12 +167,14 @@ apiRouter.delete('/admin/members/:id', async (req, res) => {
 // --- Health & Status ---
 apiRouter.get('/db-status', (req, res) => {
   const states = ['Disconnected', 'Connected', 'Connecting', 'Disconnecting'];
+  const uri = process.env.MONGODB_URI || '';
   res.json({ 
     status: states[mongoose.connection.readyState], 
     readyState: mongoose.connection.readyState,
     dbName: mongoose.connection.name,
-    hasUri: !!process.env.MONGODB_URI,
-    error: lastConnectError, // Show the real error here
+    hasUri: !!uri,
+    uriLength: uri.length, // Proves the variable exists and has content
+    error: lastConnectError,
     env: process.env.NODE_ENV
   });
 });
