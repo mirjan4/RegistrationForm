@@ -11,7 +11,8 @@ import {
   Trash2,
   LogOut,
   RefreshCw,
-  FileText
+  FileText,
+  UserPlus
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -99,8 +100,66 @@ const AdminDashboard = () => {
     m.phone.includes(search)
   );
 
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newMember, setNewMember] = useState({ idNumber: '', name: '', phone: '' });
+
+  const handleAddMember = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post(`${API_URL}/admin/members`, newMember);
+      toast.success('Member added successfully!');
+      setShowAddModal(false);
+      setNewMember({ idNumber: '', name: '', phone: '' });
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to add member');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0f0720] text-white p-4 md:p-8">
+      {/* Manual Add Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md glass-card rounded-3xl p-8 border border-white/10 shadow-2xl">
+            <h3 className="text-2xl font-black mb-6 uppercase italic">Add New Member</h3>
+            <form onSubmit={handleAddMember} className="space-y-4">
+              <div>
+                <label className="text-[10px] uppercase font-bold text-white/40 block mb-1 ml-1">ID Number</label>
+                <input 
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all"
+                  value={newMember.idNumber}
+                  onChange={(e) => setNewMember({...newMember, idNumber: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold text-white/40 block mb-1 ml-1">Full Name</label>
+                <input 
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all"
+                  value={newMember.name}
+                  onChange={(e) => setNewMember({...newMember, name: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold text-white/40 block mb-1 ml-1">Phone Number</label>
+                <input 
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all"
+                  value={newMember.phone}
+                  onChange={(e) => setNewMember({...newMember, phone: e.target.value})}
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl font-bold transition-all">Cancel</button>
+                <button type="submit" className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl font-bold transition-all">Add Member</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
         <div>
@@ -170,6 +229,26 @@ const AdminDashboard = () => {
           />
         </div>
         <div className="flex gap-3">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-6 py-3 rounded-2xl border border-white/10 font-bold transition-all text-purple-200"
+          >
+            <UserPlus size={18} /> Add Member
+          </button>
+          <button 
+            onClick={() => {
+              const csvContent = "ID,Name,Phone\n1001,John Doe,9876543210";
+              const blob = new Blob([csvContent], { type: 'text/csv' });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'member_template.csv';
+              a.click();
+            }}
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-6 py-3 rounded-2xl border border-white/10 font-bold transition-all text-blue-300"
+          >
+            <Download size={18} /> Template
+          </button>
           <label className={`cursor-pointer flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all ${uploading ? 'bg-white/5 opacity-50' : 'bg-purple-600 hover:bg-purple-500'}`}>
             <Upload size={18} />
             {uploading ? 'Processing...' : 'Upload Members CSV'}
