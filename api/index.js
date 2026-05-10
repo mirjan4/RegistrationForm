@@ -160,17 +160,26 @@ apiRouter.delete('/admin/members/:id', async (req, res) => {
   }
 });
 
+// --- Health & Status ---
+apiRouter.get('/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Backend is working!', timestamp: new Date() });
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Backend is working!', timestamp: new Date() });
+});
+
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Backend is working!' });
+  res.json({ status: 'ok', message: 'Backend is working!', timestamp: new Date() });
 });
 
 app.get('/', (req, res) => {
   res.send('Markaz Verification API is running...');
 });
 
-// Important: This allows the API to work both locally (with /api) and on Vercel
+// Mount the router
 app.use('/api', apiRouter);
-app.use('/', apiRouter); // Add this for Vercel compatibility
+app.use('/', apiRouter);
 
 const PORT = process.env.PORT || 5000;
 if (process.env.NODE_ENV !== 'production') {
