@@ -26,7 +26,8 @@ const upload = multer({ storage: storage });
 let lastConnectError = null;
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI)
+const uri = process.env.DATABASE_URL || process.env.MONGODB_URI;
+mongoose.connect(uri)
   .then(() => {
     console.log('✅ SUCCESS: Connected to MongoDB');
     lastConnectError = null;
@@ -167,7 +168,7 @@ apiRouter.delete('/admin/members/:id', async (req, res) => {
 // --- Health & Status ---
 apiRouter.get('/db-status', (req, res) => {
   const states = ['Disconnected', 'Connected', 'Connecting', 'Disconnecting'];
-  const uri = process.env.MONGODB_URI || '';
+  const uri = process.env.DATABASE_URL || process.env.MONGODB_URI || '';
   res.json({ 
     status: states[mongoose.connection.readyState], 
     readyState: mongoose.connection.readyState,
@@ -175,7 +176,7 @@ apiRouter.get('/db-status', (req, res) => {
     hasUri: !!uri,
     uriLength: uri.length,
     error: lastConnectError,
-    availableKeys: Object.keys(process.env).filter(k => !k.includes('AUTH') && !k.includes('SECRET') && !k.includes('KEY')), // List names only for safety
+    availableKeys: Object.keys(process.env).filter(k => !k.includes('AUTH') && !k.includes('SECRET') && !k.includes('KEY')),
     env: process.env.NODE_ENV
   });
 });
