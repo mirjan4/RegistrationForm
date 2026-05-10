@@ -181,6 +181,11 @@ app.get('/', (req, res) => {
 app.use('/api', apiRouter);
 app.use('/', apiRouter);
 
+// Catch-all for debugging
+app.use((req, res) => {
+  res.status(404).send(`Backend reachable! But route not found. Express saw URL: ${req.url}`);
+});
+
 const PORT = process.env.PORT || 5000;
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
