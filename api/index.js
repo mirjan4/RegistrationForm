@@ -1,13 +1,12 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const multer = require('multer');
-const csv = require('csv-parser');
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config();
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import multer from 'multer';
+import csv from 'csv-parser';
+import { Readable } from 'stream';
+import 'dotenv/config';
 
-const Member = require('./models/Member');
+import Member from './models/Member.js';
 
 const app = express();
 
@@ -19,13 +18,20 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Multer Config for CSV Upload
-const upload = multer({ dest: 'uploads/' });
+// Multer Config for CSV Upload (Memory storage for Vercel compatibility)
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+  .then(() => {
+    console.log('✅ SUCCESS: Connected to MongoDB');
+  })
+  .catch(err => {
+    console.error('❌ ERROR: Could not connect to MongoDB!');
+    console.error('Check if MONGODB_URI is correct in your .env file.');
+    console.error('Error Details:', err.message);
+  });
 
 // API Routes
 const apiRouter = express.Router();
@@ -69,7 +75,7 @@ apiRouter.post('/confirm', async (req, res) => {
   }
 });
 
-// GET /count - Get registration stats
+// GET /stats - Get registration stats
 apiRouter.get('/stats', async (req, res) => {
   try {
     const total = await Member.countDocuments();
@@ -88,7 +94,9 @@ apiRouter.post('/admin/upload', upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).send('No file uploaded.');
 
   const results = [];
-  fs.createReadStream(req.file.path)
+  const stream = Readable.from(req.file.buffer.toString());
+
+  stream
     .pipe(csv())
     .on('data', (data) => results.push({
       idNumber: data.ID || data.idNumber,
@@ -97,7 +105,6 @@ apiRouter.post('/admin/upload', upload.single('file'), (req, res) => {
     }))
     .on('end', async () => {
       try {
-        // Bulk upsert to prevent duplicates and update existing
         const ops = results.map(m => ({
           updateOne: {
             filter: { idNumber: m.idNumber },
@@ -106,7 +113,6 @@ apiRouter.post('/admin/upload', upload.single('file'), (req, res) => {
           }
         }));
         await Member.bulkWrite(ops);
-        fs.unlinkSync(req.file.path); // Delete temp file
         res.json({ message: `${results.length} members processed successfully.` });
       } catch (error) {
         console.error(error);
@@ -122,6 +128,25 @@ apiRouter.get('/admin/members', async (req, res) => {
     res.json(members);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching members.' });
+  }
+});
+
+// POST /admin/members - Add a member manually
+apiRouter.post('/admin/members', async (req, res) => {
+  try {
+    const { idNumber, name, phone } = req.body;
+    
+    // Check if ID already exists
+    const existing = await Member.findOne({ idNumber });
+    if (existing) {
+      return res.status(400).json({ message: 'A member with this ID already exists.' });
+    }
+
+    const newMember = new Member({ idNumber, name, phone });
+    await newMember.save();
+    res.status(201).json({ message: 'Member added successfully!', member: newMember });
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding member manually.' });
   }
 });
 
@@ -146,4 +171,4 @@ if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }
 
-module.exports = app;
+export default app;

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const memberSchema = new mongoose.Schema({
   idNumber: {
@@ -28,4 +28,5 @@ const memberSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Member', memberSchema);
+const Member = mongoose.model('Member', memberSchema);
+export default Member;
