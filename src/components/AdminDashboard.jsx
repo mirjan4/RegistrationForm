@@ -99,11 +99,11 @@ const AdminDashboard = () => {
     }
   };
 
-  const filteredMembers = members.filter(m =>
+  const filteredMembers = Array.isArray(members) ? members.filter(m =>
     m.name?.toLowerCase().includes(search.toLowerCase()) ||
     m.idNumber?.includes(search) ||
     m.phone?.includes(search)
-  );
+  ) : [];
 
   const handleDelete = async (id) => {
     try {
