@@ -164,7 +164,9 @@ app.get('/', (req, res) => {
   res.send('Markaz Verification API is running...');
 });
 
+// Important: This allows the API to work both locally (with /api) and on Vercel
 app.use('/api', apiRouter);
+app.use('/', apiRouter); // Add this for Vercel compatibility
 
 const PORT = process.env.PORT || 5000;
 if (process.env.NODE_ENV !== 'production') {
