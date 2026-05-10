@@ -173,8 +173,9 @@ apiRouter.get('/db-status', (req, res) => {
     readyState: mongoose.connection.readyState,
     dbName: mongoose.connection.name,
     hasUri: !!uri,
-    uriLength: uri.length, // Proves the variable exists and has content
+    uriLength: uri.length,
     error: lastConnectError,
+    availableKeys: Object.keys(process.env).filter(k => !k.includes('AUTH') && !k.includes('SECRET') && !k.includes('KEY')), // List names only for safety
     env: process.env.NODE_ENV
   });
 });
