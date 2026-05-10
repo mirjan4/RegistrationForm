@@ -167,7 +167,9 @@ apiRouter.get('/db-status', (req, res) => {
   res.json({ 
     status: states[mongoose.connection.readyState], 
     readyState: mongoose.connection.readyState,
-    dbName: mongoose.connection.name
+    dbName: mongoose.connection.name,
+    hasUri: !!process.env.MONGODB_URI, // Tells us if the variable exists
+    env: process.env.NODE_ENV
   });
 });
 
