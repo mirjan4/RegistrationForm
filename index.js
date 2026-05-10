@@ -7,7 +7,7 @@ import multer from 'multer';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 
-import Member from './models/Member.js';
+import Member from './api/models/Member.js';
 
 const app = express();
 
