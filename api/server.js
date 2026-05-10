@@ -48,7 +48,7 @@ apiRouter.get('/search/:id', async (req, res) => {
     }
     res.json(member);
   } catch (error) {
-    res.status(500).json({ message: 'Error searching for member.' });
+    res.status(500).json({ message: 'Error searching for member.', error: error.message });
   }
 });
 
@@ -72,7 +72,7 @@ apiRouter.post('/confirm', async (req, res) => {
 
     res.json({ message: 'Registration confirmed successfully!', member });
   } catch (error) {
-    res.status(500).json({ message: 'Error confirming registration.' });
+    res.status(500).json({ message: 'Error confirming registration.', error: error.message });
   }
 });
 
@@ -84,7 +84,7 @@ apiRouter.get('/stats', async (req, res) => {
     const notRegistered = total - registered;
     res.json({ total, registered, notRegistered });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching stats.' });
+    res.status(500).json({ message: 'Error fetching stats.', error: error.message });
   }
 });
 
@@ -117,7 +117,7 @@ apiRouter.post('/admin/upload', upload.single('file'), (req, res) => {
         res.json({ message: `${results.length} members processed successfully.` });
       } catch (error) {
         console.error(error);
-        res.status(500).send('Error processing CSV data.');
+        res.status(500).json({ message: 'Error processing CSV data.', error: error.message });
       }
     });
 });
@@ -128,7 +128,7 @@ apiRouter.get('/admin/members', async (req, res) => {
     const members = await Member.find().sort({ idNumber: 1 });
     res.json(members);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching members.' });
+    res.status(500).json({ message: 'Error fetching members.', error: error.message });
   }
 });
 
