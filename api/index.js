@@ -160,6 +160,10 @@ apiRouter.delete('/admin/members/:id', async (req, res) => {
   }
 });
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Backend is working!' });
+});
+
 app.get('/', (req, res) => {
   res.send('Markaz Verification API is running...');
 });
