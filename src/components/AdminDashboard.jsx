@@ -1,212 +1,245 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { motion } from 'framer-motion';
 import { 
   Users, 
+  CheckCircle, 
+  XCircle, 
+  Upload, 
   Search, 
   Download, 
-  Trash2, 
-  LogOut, 
+  Trash2,
+  LogOut,
   RefreshCw,
-  ChevronRight,
-  UserCheck
+  FileText
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-let API_URL = import.meta.env.VITE_API_URL || '/api';
-if (API_URL.endsWith('/')) {
-  API_URL = API_URL.slice(0, -1);
-}
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const AdminDashboard = () => {
-  const [registrations, setRegistrations] = useState([]);
+  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [search, setSearch] = useState('');
+  const [stats, setStats] = useState({ total: 0, registered: 0, notRegistered: 0 });
+  const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchRegistrations();
+    fetchData();
   }, []);
 
-  const fetchRegistrations = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/registrations`);
-      setRegistrations(response.data);
-    } catch (error) {
-      toast.error('Failed to fetch registrations');
+      const [membersRes, statsRes] = await Promise.all([
+        axios.get(`${API_URL}/admin/members`),
+        axios.get(`${API_URL}/stats`)
+      ]);
+      setMembers(membersRes.data);
+      setStats(statsRes.data);
+    } catch (err) {
+      toast.error('Error fetching data');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this registration?')) return;
-    
-    try {
-      await axios.delete(`${API_URL}/registrations/${id}`);
-      toast.success('Registration deleted');
-      fetchRegistrations();
-    } catch (error) {
-      toast.error('Failed to delete registration');
-    }
-  };
-
   const handleLogout = () => {
-    localStorage.removeItem('isAdminAuthenticated');
+    localStorage.removeItem('isAdmin');
     navigate('/admin/login');
   };
 
-  const exportToCSV = () => {
-    const headers = ['Name', 'Phone', 'Place', 'Date'];
-    const csvData = registrations.map(reg => [
-      reg.name,
-      reg.phone,
-      reg.place,
-      new Date(reg.createdAt).toLocaleDateString()
-    ]);
-    
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => row.join(','))
-    ].join('\n');
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'registrations.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setUploading(true);
+    try {
+      const { data } = await axios.post(`${API_URL}/admin/upload`, formData);
+      toast.success(data.message);
+      fetchData();
+    } catch (err) {
+      toast.error('CSV Upload failed. Ensure headers are ID, Name, Phone.');
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const filteredRegistrations = registrations.filter(reg => 
-    reg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reg.phone.includes(searchTerm) ||
-    reg.place.toLowerCase().includes(searchTerm.toLowerCase())
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this member?')) return;
+    try {
+      await axios.delete(`${API_URL}/admin/members/${id}`);
+      toast.success('Member deleted');
+      fetchData();
+    } catch (err) {
+      toast.error('Delete failed');
+    }
+  };
+
+  const exportCSV = () => {
+    const headers = ['ID Number,Name,Phone,Status,Time'];
+    const rows = members.map(m => 
+      `${m.idNumber},${m.name},${m.phone},${m.status},${m.registrationTime || '-'}`
+    );
+    const blob = new Blob([[headers, ...rows].join('\n')], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Members_Report_${new Date().toLocaleDateString()}.csv`;
+    a.click();
+  };
+
+  const filteredMembers = members.filter(m => 
+    m.name.toLowerCase().includes(search.toLowerCase()) ||
+    m.idNumber.includes(search) ||
+    m.phone.includes(search)
   );
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+    <div className="min-h-screen bg-[#0f0720] text-white p-4 md:p-8">
+      {/* Header */}
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <UserCheck className="text-purple-300" />
-            Admin Dashboard
-          </h1>
-          <p className="text-white/60">Manage your event participants</p>
+          <h1 className="text-3xl font-black tracking-tighter uppercase italic">Admin Dashboard</h1>
+          <p className="text-white/40 text-sm">Attendance & Member Verification Control</p>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={exportToCSV}
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl border border-white/10 transition-all text-sm font-medium"
-          >
-            <Download size={18} />
-            Export CSV
+        <div className="flex gap-3">
+          <button onClick={fetchData} className="p-2 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
+            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
           </button>
           <button 
             onClick={handleLogout}
-            className="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 px-4 py-2 rounded-xl border border-red-500/20 transition-all text-sm font-medium"
+            className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 px-4 py-2 rounded-xl border border-red-500/20 transition-all font-bold text-sm"
           >
-            <LogOut size={18} />
-            Logout
+            <LogOut size={18} /> Logout
           </button>
         </div>
-      </header>
-
-      {/* Stats Card */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-card p-6 rounded-3xl flex items-center gap-6"
-        >
-          <div className="w-16 h-16 bg-purple-500/20 rounded-2xl flex items-center justify-center border border-purple-500/30">
-            <Users className="text-purple-300" size={32} />
-          </div>
-          <div>
-            <p className="text-white/60 text-sm font-medium">Total Registrations</p>
-            <h3 className="text-4xl font-black">{registrations.length}</h3>
-          </div>
-        </motion.div>
       </div>
 
-      {/* Main Content */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="glass-card rounded-3xl overflow-hidden"
-      >
-        <div className="p-6 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" size={18} />
-            <input
-              type="text"
-              placeholder="Search by name, phone or place..."
-              className="form-input pl-11 py-2 text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+      {/* Stats Grid */}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="glass-card p-6 rounded-[2rem] border border-white/5 bg-gradient-to-br from-white/5 to-transparent">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-purple-500/20 rounded-2xl flex items-center justify-center border border-purple-500/20">
+              <Users className="text-purple-400" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-widest text-white/40">Total Members</p>
+              <p className="text-3xl font-black">{stats.total}</p>
+            </div>
           </div>
-          
+        </div>
+        <div className="glass-card p-6 rounded-[2rem] border border-white/5 bg-gradient-to-br from-white/5 to-transparent">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-green-500/20 rounded-2xl flex items-center justify-center border border-green-500/20">
+              <CheckCircle className="text-green-400" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-widest text-white/40">Registered</p>
+              <p className="text-3xl font-black text-green-400">{stats.registered}</p>
+            </div>
+          </div>
+        </div>
+        <div className="glass-card p-6 rounded-[2rem] border border-white/5 bg-gradient-to-br from-white/5 to-transparent">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-orange-500/20 rounded-2xl flex items-center justify-center border border-orange-500/20">
+              <XCircle className="text-orange-400" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-widest text-white/40">Not Registered</p>
+              <p className="text-3xl font-black text-orange-400">{stats.notRegistered}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Controls Section */}
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex-1 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={20} />
+          <input 
+            type="text"
+            placeholder="Search by ID, Name or Phone..."
+            className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 focus:border-purple-500/50 outline-none transition-all"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-3">
+          <label className={`cursor-pointer flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all ${uploading ? 'bg-white/5 opacity-50' : 'bg-purple-600 hover:bg-purple-500'}`}>
+            <Upload size={18} />
+            {uploading ? 'Processing...' : 'Upload Members CSV'}
+            <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+          </label>
           <button 
-            onClick={fetchRegistrations}
-            disabled={loading}
-            className="p-2 hover:bg-white/10 rounded-lg transition-all"
-            title="Refresh data"
+            onClick={exportCSV}
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-6 py-3 rounded-2xl border border-white/10 font-bold transition-all"
           >
-            <RefreshCw className={loading ? "animate-spin" : ""} size={20} />
+            <Download size={18} /> Export
           </button>
         </div>
+      </div>
 
+      {/* Table Section */}
+      <div className="max-w-7xl mx-auto glass-card rounded-[2.5rem] border border-white/5 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-white/5 text-purple-200/80 text-sm font-bold uppercase tracking-wider">
-                <th className="px-6 py-4">Name</th>
-                <th className="px-6 py-4">Phone</th>
-                <th className="px-6 py-4">Place</th>
-                <th className="px-6 py-4 text-center">Actions</th>
+              <tr className="bg-white/5 border-b border-white/5">
+                <th className="px-6 py-4 text-xs uppercase tracking-widest text-white/40 font-bold">ID Number</th>
+                <th className="px-6 py-4 text-xs uppercase tracking-widest text-white/40 font-bold">Full Name</th>
+                <th className="px-6 py-4 text-xs uppercase tracking-widest text-white/40 font-bold">Phone Number</th>
+                <th className="px-6 py-4 text-xs uppercase tracking-widest text-white/40 font-bold">Status</th>
+                <th className="px-6 py-4 text-xs uppercase tracking-widest text-white/40 font-bold">Reg. Time</th>
+                <th className="px-6 py-4 text-xs uppercase tracking-widest text-white/40 font-bold text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
-              {filteredRegistrations.length > 0 ? (
-                filteredRegistrations.map((reg) => (
-                  <tr key={reg._id} className="hover:bg-white/5 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="font-medium">{reg.name}</div>
-                      <div className="text-xs text-white/40">{new Date(reg.createdAt).toLocaleString()}</div>
-                    </td>
-                    <td className="px-6 py-4 font-mono text-sm">{reg.phone}</td>
-                    <td className="px-6 py-4 text-white/80">{reg.place}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <button 
-                          onClick={() => handleDelete(reg._id)}
-                          className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
+            <tbody>
+              {filteredMembers.map((member) => (
+                <tr key={member._id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
+                  <td className="px-6 py-4 font-mono font-bold text-purple-300">#{member.idNumber}</td>
+                  <td className="px-6 py-4 font-bold">{member.name}</td>
+                  <td className="px-6 py-4 text-white/60">{member.phone}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                      member.status === 'Registered' 
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+                        : 'bg-white/5 text-white/30 border-white/5'
+                    }`}>
+                      {member.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-[11px] text-white/40">
+                    {member.registrationTime ? new Date(member.registrationTime).toLocaleString() : '-'}
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <button 
+                      onClick={() => handleDelete(member._id)}
+                      className="p-2 text-white/20 hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filteredMembers.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="px-6 py-12 text-center text-white/40">
-                    {loading ? "Loading data..." : "No registrations found."}
+                  <td colSpan="6" className="px-6 py-12 text-center text-white/20">
+                    <div className="flex flex-col items-center gap-3">
+                      <FileText size={48} className="opacity-10" />
+                      <p className="font-bold">No members found matching your search.</p>
+                    </div>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

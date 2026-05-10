@@ -1,10 +1,13 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const Registration = require('./models/Registration');
+const multer = require('multer');
+const csv = require('csv-parser');
+const fs = require('fs');
+const path = require('path');
+require('dotenv').config();
 
-dotenv.config();
+const Member = require('./models/Member');
 
 const app = express();
 
@@ -16,79 +19,131 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Multer Config for CSV Upload
+const upload = multer({ dest: 'uploads/' });
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// API Routes using a Router
+// API Routes
 const apiRouter = express.Router();
 
-// POST /register - Register a new user
-apiRouter.post('/register', async (req, res) => {
-  try {
-    const { name, phone, place } = req.body;
+// --- USER ROUTES ---
 
-    const existingUser = await Registration.findOne({ phone });
-    if (existingUser) {
-      return res.status(400).json({ message: 'This phone number is already registered.' });
+// GET /search/:id - Find member by ID
+apiRouter.get('/search/:id', async (req, res) => {
+  try {
+    const member = await Member.findOne({ idNumber: req.params.id });
+    if (!member) {
+      return res.status(404).json({ message: 'Invalid ID Number. Member not found.' });
+    }
+    res.json(member);
+  } catch (error) {
+    res.status(500).json({ message: 'Error searching for member.' });
+  }
+});
+
+// POST /confirm - Confirm registration
+apiRouter.post('/confirm', async (req, res) => {
+  try {
+    const { idNumber } = req.body;
+    const member = await Member.findOne({ idNumber });
+
+    if (!member) {
+      return res.status(404).json({ message: 'Member not found.' });
     }
 
-    const newRegistration = new Registration({ name, phone, place });
-    await newRegistration.save();
+    if (member.status === 'Registered') {
+      return res.status(400).json({ message: 'This ID is already registered.' });
+    }
 
-    res.status(201).json({ message: 'Registration successful!', data: newRegistration });
+    member.status = 'Registered';
+    member.registrationTime = new Date();
+    await member.save();
+
+    res.json({ message: 'Registration confirmed successfully!', member });
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ message: 'Server error.' });
+    res.status(500).json({ message: 'Error confirming registration.' });
   }
 });
 
-// GET /registrations - Get all registrations
-apiRouter.get('/registrations', async (req, res) => {
+// GET /count - Get registration stats
+apiRouter.get('/stats', async (req, res) => {
   try {
-    const registrations = await Registration.find().sort({ createdAt: -1 });
-    res.status(200).json(registrations);
+    const total = await Member.countDocuments();
+    const registered = await Member.countDocuments({ status: 'Registered' });
+    const notRegistered = total - registered;
+    res.json({ total, registered, notRegistered });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching registrations.' });
+    res.status(500).json({ message: 'Error fetching stats.' });
   }
 });
 
-// GET /count - Get total registration count
-apiRouter.get('/count', async (req, res) => {
+// --- ADMIN ROUTES ---
+
+// POST /admin/upload - Upload CSV
+apiRouter.post('/admin/upload', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).send('No file uploaded.');
+
+  const results = [];
+  fs.createReadStream(req.file.path)
+    .pipe(csv())
+    .on('data', (data) => results.push({
+      idNumber: data.ID || data.idNumber,
+      name: data.Name || data.name,
+      phone: data.Phone || data.phone
+    }))
+    .on('end', async () => {
+      try {
+        // Bulk upsert to prevent duplicates and update existing
+        const ops = results.map(m => ({
+          updateOne: {
+            filter: { idNumber: m.idNumber },
+            update: { $set: m },
+            upsert: true
+          }
+        }));
+        await Member.bulkWrite(ops);
+        fs.unlinkSync(req.file.path); // Delete temp file
+        res.json({ message: `${results.length} members processed successfully.` });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send('Error processing CSV data.');
+      }
+    });
+});
+
+// GET /admin/members - Get all members for table
+apiRouter.get('/admin/members', async (req, res) => {
   try {
-    const count = await Registration.countDocuments();
-    res.status(200).json({ count });
+    const members = await Member.find().sort({ idNumber: 1 });
+    res.json(members);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching count.' });
+    res.status(500).json({ message: 'Error fetching members.' });
   }
 });
 
-// DELETE /registrations/:id - Delete a registration
-apiRouter.delete('/registrations/:id', async (req, res) => {
+// DELETE /admin/members/:id - Delete a member
+apiRouter.delete('/admin/members/:id', async (req, res) => {
   try {
-    await Registration.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: 'Registration deleted successfully.' });
+    await Member.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Member deleted.' });
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting registration.' });
+    res.status(500).json({ message: 'Error deleting member.' });
   }
 });
 
-// Health Check Route
 app.get('/', (req, res) => {
-  res.send('Markaz Event API is running...');
+  res.send('Markaz Verification API is running...');
 });
 
-// Mount the router
 app.use('/api', apiRouter);
 
-
 const PORT = process.env.PORT || 5000;
-
 if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }
 
 module.exports = app;
