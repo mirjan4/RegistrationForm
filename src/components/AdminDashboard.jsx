@@ -98,6 +98,12 @@ const AdminDashboard = () => {
     }
   };
 
+  const filteredMembers = members.filter(m =>
+    m.name?.toLowerCase().includes(search.toLowerCase()) ||
+    m.idNumber?.includes(search) ||
+    m.phone?.includes(search)
+  );
+
   const handleDelete = async (id) => {
     try {
       await axios.delete(`${API_URL}/admin/members/${id}`);
